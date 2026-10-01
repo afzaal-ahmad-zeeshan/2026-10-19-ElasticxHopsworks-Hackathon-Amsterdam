@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hackathon ops console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --fg:#e6e8ee; --dim:#8b93a5; --acc:#4da3ff; --bad:#ff5d5d; --ok:#4cd08a; --warn:#f5b64a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, sans-serif; }
+  header { display:flex; gap:16px; align-items:center; padding:10px 20px; border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap; }
+  header h1 { font-size:15px; margin:0 8px 0 0; }
+  main { max-width:980px; margin:0 auto; padding:20px; }
+  nav { display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+  nav button { background:none; border:0; color:var(--dim); padding:8px 14px; cursor:pointer; border-bottom:2px solid transparent; font:inherit; }
+  nav button.on { color:var(--fg); border-color:var(--acc); }
+  section { display:none; } section.on { display:block; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--dim); margin:0 0 10px; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:500; } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  input, select, textarea, button.b { background:#0f1115; color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:6px 8px; font:inherit; }
+  textarea { width:100%; font:12px/1.4 ui-monospace, Menlo, monospace; }
+  button.b { cursor:pointer; background:#232836; } button.b:hover { border-color:var(--acc); }
+  button.pri { background:var(--acc); color:#04121f; border-color:var(--acc); }
+  button.danger { background:#3a1618; border-color:var(--bad); color:#ffb4b4; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0; }
+  .dim { color:var(--dim); } .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
+  pre.log { background:#0a0c10; border:1px solid var(--line); border-radius:4px; padding:10px; height:340px; overflow:auto; margin:8px 0 0; font:12px/1.4 ui-monospace, Menlo, monospace; white-space:pre-wrap; }
+  #msg { position:fixed; right:16px; bottom:16px; max-width:420px; padding:10px 14px; border-radius:6px; background:var(--panel); border:1px solid var(--line); display:none; }
+  .tag { font-size:11px; padding:1px 6px; border:1px solid var(--line); border-radius:10px; color:var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏎️ Hackathon ops console</h1>
+  <label class="dim">Cluster <select id="cluster"></select></label>
+  <span id="who" class="dim"></span>
+  <span style="flex:1"></span>
+  <button class="b" id="refresh">Refresh</button>
+</header>
+<main>
+  <nav id="tabs">
+    <button data-t="overview" class="on">Overview</button>
+    <button data-t="ingest">Ingest</button>
+    <button data-t="keys">Reindex access</button>
+    <button data-t="cleanup">Cleanup &amp; teardown</button>
+  </nav>
+
+  <section id="overview" class="on">
+    <div class="card"><h2>Cluster</h2><div id="cinfo" class="dim">loading…</div>
+      <div id="cerr" class="warn"></div></div>
+    <div class="card"><h2>f1-* indices</h2><div id="idx"></div></div>
+    <div class="card"><h2>Connect another cluster</h2>
+      <div class="row">
+        <input id="n_name" placeholder="name (e.g. staging)" size="14">
+        <input id="n_url" placeholder="https://….es.region.elastic.cloud:443" size="44">
+      </div>
+      <div class="row">
+        <input id="n_key" placeholder="API key (encoded)" size="30" type="password" autocomplete="off">
+        <span class="dim">or</span>
+        <input id="n_user" placeholder="username" size="12" autocomplete="off">
+        <input id="n_pass" placeholder="password" size="14" type="password" autocomplete="off">
+        <button class="b pri" id="n_add">Connect</button>
+      </div>
+      <div class="dim">Kept in memory only; gone when the server stops. Creating API keys needs username/password (an API key can't mint keys with privileges).</div>
+    </div>
+  </section>
+
+  <section id="ingest">
+    <div class="card"><h2>Prime the cluster from FastF1</h2>
+      <div class="row">
+        <label>Seasons <input id="seasons" value="2023,2024" size="14"></label>
+        <button class="b pri" id="i_start">Start ingest</button>
+        <button class="b danger" id="i_stop">Stop</button>
+        <span id="i_state" class="dim"></span>
+      </div>
+      <div class="warn">Starting drops and recreates every f1-* index on the selected cluster. Telemetry takes roughly 1–2 hours.</div>
+      <pre class="log" id="log"></pre>
+    </div>
+  </section>
+
+  <section id="keys">
+    <div class="card"><h2>Create key in Kibana Dev Tools</h2>
+      <div class="dim">Works with any login, including API-key connections. Uses the label, expiry and indices from the form below.</div>
+      <textarea id="d_create" rows="14" readonly></textarea>
+      <div class="row"><button class="b" id="d_copy">Copy create call</button>
+        <span class="dim">then paste the <code>encoded</code> value from the response:</span></div>
+      <div class="row"><input id="d_paste" placeholder="encoded key from the response" size="60" type="password" autocomplete="off"></div>
+      <div id="d_out" style="display:none">
+        <p class="dim">Reindex calls for the participant cluster (destination may need <code>reindex.remote.whitelist</code> to include <code id="d_host"></code>):</p>
+        <textarea id="d_snip" rows="12" readonly></textarea>
+        <div class="row"><button class="b" id="d_copys">Copy reindex calls</button></div>
+      </div>
+      <p class="dim">Revoke / list in Dev Tools: <code>DELETE /_security/api_key</code> with <code>{"ids":["&lt;id&gt;"]}</code>, or <code>GET /_security/api_key?name=hackathon-ro-*&amp;active_only=true</code></p>
+    </div>
+    <div class="card"><h2>Create read-only key for remote reindex (needs username/password connection)</h2>
+      <div class="row">
+        <label>Label <input id="k_label" value="hacknight" size="14"></label>
+        <label>Expires in <input id="k_days" type="number" min="1" max="365" value="3" style="width:64px"> days</label>
+        <label>Indices <input id="k_pat" value="f1-*" size="14"></label>
+        <button class="b pri" id="k_make">Create key</button>
+      </div>
+      <div class="dim">Grants <code>read</code> + <code>view_index_metadata</code> only. Key name is prefixed <code>hackathon-ro-</code>.</div>
+      <div id="k_out" style="display:none">
+        <p class="warn">Shown once — copy it now.</p>
+        <div class="row"><input id="k_enc" readonly size="60"><button class="b" id="k_copy">Copy key</button></div>
+        <p class="dim">Dev Tools snippets for the participant cluster (the destination may need <code>reindex.remote.whitelist</code> to include <code id="k_host"></code>):</p>
+        <textarea id="k_snip" rows="12" readonly></textarea>
+        <div class="row"><button class="b" id="k_copys">Copy snippets</button></div>
+      </div>
+    </div>
+    <div class="card"><h2>Active hackathon keys</h2><div id="klist"></div></div>
+  </section>
+
+  <section id="cleanup">
+    <div class="card"><h2>Delete indices</h2>
+      <div class="row">
+        <input id="c_pat" value="f1-*" size="24">
+        <button class="b" id="c_prev">Preview</button>
+      </div>
+      <div id="c_list" class="dim"></div>
+      <div class="row">
+        <input id="c_conf" placeholder="type cluster name to confirm" size="28">
+        <button class="b danger" id="c_del">Delete matching indices</button>
+      </div>
+    </div>
+    <div class="card"><h2>Tear down</h2>
+      <p>Deletes every <code>f1-*</code> index and invalidates all <code>hackathon-ro-*</code> keys on the selected cluster. Kibana data views are not touched.</p>
+      <div class="row">
+        <input id="t_conf" placeholder="type cluster name to confirm" size="28">
+        <button class="b danger" id="t_go">Tear down cluster</button>
+      </div>
+    </div>
+    <div class="card"><h2>Forget connection</h2>
+      <button class="b" id="c_forget">Remove this cluster from the console</button>
+      <span class="dim">(doesn't touch the cluster)</span>
+    </div>
+  </section>
+</main>
+<div id="msg"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cur = () => $("cluster").value;
+let logSince = 0, poll = null, clusterList = [];
+
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { "Content-Type": "application/json", "X-Ops-Console": "1" },
+    body: method === "GET" ? undefined : JSON.stringify(body || {}) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(t, bad) {
+  const m = $("msg"); m.textContent = t; m.style.display = "block"; m.style.borderColor = bad ? "var(--bad)" : "var(--ok)";
+  clearTimeout(toast.t); toast.t = setTimeout(() => m.style.display = "none", bad ? 9000 : 4000);
+}
+const run = fn => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message, true); } };
+
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll("main > section").forEach(s => s.classList.toggle("on", s.id === b.dataset.t));
+  if (b.dataset.t === "keys") loadKeys().catch(e => toast(e.message, true));
+});
+
+async function loadClusters(select) {
+  const list = await api("GET", "/api/clusters");
+  clusterList = list;
+  $("cluster").innerHTML = list.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+  if (select) $("cluster").value = select;
+  renderDevTools();
+  if (!list.length) { $("cinfo").textContent = "No cluster configured. Connect one below."; return false; }
+  return true;
+}
+
+async function loadStatus() {
+  if (!cur()) return;
+  $("cinfo").textContent = "loading…"; $("cerr").textContent = ""; $("idx").textContent = "";
+  const s = await api("GET", "/api/status?cluster=" + encodeURIComponent(cur()));
+  $("cinfo").innerHTML = `${esc(s.url)} <span class="tag">${esc(s.auth)}</span>` +
+    (s.info ? ` — ES ${esc(s.info.version)} · ${esc(s.info.cluster_name)}` : "");
+  $("who").textContent = s.whoami ? `as ${s.whoami.user} (${s.whoami.type})` : "";
+  $("cerr").innerHTML = s.errors.map(esc).join("<br>");
+  const rows = s.indices || [];
+  $("idx").innerHTML = rows.length
+    ? `<table><tr><th>index</th><th>health</th><th class="n">docs</th><th class="n">size</th></tr>` +
+      rows.map(r => `<tr><td>${esc(r.index)}</td><td>${esc(r.health)}</td><td class="n">${r.docs.toLocaleString()}</td><td class="n">${esc(r.size)}</td></tr>`).join("") + "</table>"
+    : `<span class="dim">no f1-* indices</span>`;
+}
+
+async function refresh() { if (await loadClusters(cur())) await loadStatus(); }
+$("refresh").onclick = run(refresh);
+$("cluster").onchange = run(async () => { $("klist").innerHTML = ""; await loadStatus(); });
+
+$("n_add").onclick = run(async () => {
+  const name = $("n_name").value.trim();
+  await api("POST", "/api/clusters", { name, url: $("n_url").value.trim(), api_key: $("n_key").value.trim(),
+    username: $("n_user").value.trim(), password: $("n_pass").value });
+  ["n_key", "n_pass"].forEach(i => $(i).value = "");
+  await loadClusters(name); await loadStatus(); toast("connected: " + name);
+});
+$("c_forget").onclick = run(async () => {
+  if (!confirm("Forget " + cur() + "?")) return;
+  await api("DELETE", "/api/clusters/" + encodeURIComponent(cur())); await refresh();
+});
+
+// Ingest
+async function pollIngest() {
+  const s = await api("GET", "/api/ingest?since=" + logSince);
+  const log = $("log"), stick = log.scrollTop + log.clientHeight >= log.scrollHeight - 20;
+  if (s.total < logSince) { log.textContent = ""; }
+  if (s.lines.length) { log.textContent += s.lines.join("\n") + "\n"; }
+  logSince = s.total;
+  if (stick) log.scrollTop = log.scrollHeight;
+  $("i_state").textContent = s.running ? `running on “${s.cluster}” since ${new Date(s.started * 1000).toLocaleTimeString()}` : (s.started ? "finished" : "idle");
+  $("i_start").disabled = s.running; $("i_stop").disabled = !s.running;
+}
+$("i_start").onclick = run(async () => {
+  const seasons = $("seasons").value.split(",").map(x => parseInt(x)).filter(Boolean);
+  if (!confirm(`Drop and recreate all f1-* indices on “${cur()}” and re-ingest seasons ${seasons}?`)) return;
+  logSince = 0; $("log").textContent = "";
+  await api("POST", "/api/ingest/start", { cluster: cur(), seasons, confirm_wipe: true });
+  await pollIngest();
+});
+$("i_stop").onclick = run(async () => { await api("POST", "/api/ingest/stop"); });
+
+// Keys
+async function loadKeys() {
+  const ks = await api("GET", "/api/keys?cluster=" + encodeURIComponent(cur()));
+  const d = t => t ? new Date(t).toLocaleString() : "never";
+  $("klist").innerHTML = ks.length
+    ? `<table><tr><th>name</th><th>id</th><th>created</th><th>expires</th><th></th></tr>` +
+      ks.map(k => `<tr><td>${esc(k.name)}</td><td>${esc(k.id)}</td><td>${d(k.created)}</td><td>${d(k.expiration)}</td>
+        <td><button class="b danger" data-id="${esc(k.id)}">Revoke</button></td></tr>`).join("") + "</table>"
+    : `<span class="dim">none</span>`;
+  $("klist").querySelectorAll("button[data-id]").forEach(b => b.onclick = run(async () => {
+    if (!confirm("Revoke key " + b.dataset.id + "?")) return;
+    await api("POST", "/api/keys/invalidate", { cluster: cur(), ids: [b.dataset.id] }); await loadKeys();
+  }));
+}
+$("k_make").onclick = run(async () => {
+  const r = await api("POST", "/api/keys", { cluster: cur(), label: $("k_label").value, days: $("k_days").value,
+    patterns: $("k_pat").value.split(",") });
+  $("k_out").style.display = "block"; $("k_enc").value = r.encoded; $("k_snip").value = r.snippets; $("k_host").textContent = r.host;
+  await loadKeys();
+});
+const copy = (id, what) => run(async () => { await navigator.clipboard.writeText($(id).value); toast(what + " copied"); });
+$("k_copy").onclick = copy("k_enc", "key"); $("k_copys").onclick = copy("k_snip", "snippets");
+
+// Dev Tools snippets (client-side)
+const INDEXES = ["f1-sessions", "f1-results", "f1-laps", "f1-weather", "f1-telemetry"];
+function keyForm() {
+  const label = ($("k_label").value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "")) || "event";
+  const days = Math.min(Math.max(parseInt($("k_days").value) || 3, 1), 365);
+  const pats = $("k_pat").value.split(",").map(s => s.trim()).filter(Boolean);
+  return { label, days, pats: pats.length ? pats : ["f1-*"] };
+}
+function remoteHost() {
+  const c = clusterList.find(c => c.name === cur());
+  if (!c) return "https://<PRIMARY_HOST>:443";
+  const u = new URL(c.url);
+  return `${u.protocol}//${u.hostname}:${u.port || (u.protocol === "https:" ? 443 : 9200)}`;
+}
+function renderDevTools() {
+  const f = keyForm();
+  $("d_create").value = `POST /_security/api_key\n` + JSON.stringify({
+    name: "hackathon-ro-" + f.label, expiration: f.days + "d",
+    role_descriptors: { f1_reader: { indices: [{ names: f.pats, privileges: ["read", "view_index_metadata"] }] } },
+    metadata: { purpose: "remote reindex" } }, null, 2);
+  const key = $("d_paste").value.trim();
+  $("d_out").style.display = key ? "block" : "none";
+  $("d_host").textContent = remoteHost();
+  $("d_snip").value = INDEXES.map(i => `POST _reindex?wait_for_completion=false\n` + JSON.stringify({
+    source: { remote: { host: remoteHost(), api_key: key }, index: i, size: 2000 }, dest: { index: i } }, null, 2)).join("\n\n");
+}
+["k_label", "k_days", "k_pat", "d_paste"].forEach(i => $(i).addEventListener("input", renderDevTools));
+$("cluster").addEventListener("change", renderDevTools);
+$("d_copy").onclick = copy("d_create", "create call"); $("d_copys").onclick = copy("d_snip", "reindex calls");
+renderDevTools();
+
+// Cleanup
+$("c_prev").onclick = run(async () => {
+  const r = await api("GET", `/api/indices?cluster=${encodeURIComponent(cur())}&pattern=${encodeURIComponent($("c_pat").value)}`);
+  $("c_list").innerHTML = r.length ? r.map(i => `${esc(i.index)} <span class="dim">(${i.docs.toLocaleString()} docs)</span>`).join("<br>") : "no matches";
+});
+$("c_del").onclick = run(async () => {
+  const r = await api("POST", "/api/indices/delete", { cluster: cur(), pattern: $("c_pat").value, confirm: $("c_conf").value });
+  $("c_conf").value = ""; $("c_list").textContent = ""; toast(`deleted ${r.deleted.length} index(es)`); await loadStatus();
+});
+$("t_go").onclick = run(async () => {
+  const r = await api("POST", "/api/teardown", { cluster: cur(), confirm: $("t_conf").value });
+  $("t_conf").value = "";
+  toast(`deleted ${r.deleted_indices.length} indices, revoked ${r.invalidated_keys.length} keys` + (r.errors.length ? " — " + r.errors.join("; ") : ""), r.errors.length > 0);
+  await loadStatus();
+});
+
+run(refresh)(); pollIngest().catch(() => {}); setInterval(() => pollIngest().catch(() => {}), 2000);
+</script>
+</body>
+</html>

@@ -24,6 +24,7 @@ It could be a tyre strategy advisor, a lap-time predictor, a race outcome simula
 3. Once it is created, open **Kibana** from the project page.
 4. [Create a free Hopsworks account](https://run.hopsworks.ai/) and create a project for the hackathon. Generate an API key for the Python SDK.
 5. Install **Python 3.9+** on your laptop.
+   - Python is not needed if you would use the pre-ingested data in Elastic cluster.
 
 **Note:** if you do not want to create an account, we can provide temporary credentials to access a shared Elastic Cloud deployment.
 

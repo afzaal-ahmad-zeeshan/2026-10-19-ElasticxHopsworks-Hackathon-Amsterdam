@@ -19,7 +19,7 @@ It could be a tyre strategy advisor, a lap-time predictor, a race outcome simula
 
 ## 🚀 Set up your environment
 
-1. [Create a free Elastic Cloud account](https://links.elastic.dev/alias/hack-night-elastic-hopsworks-2026) or log in to your existing one.
+1. [Create a free Elastic Cloud account](https://ela.st/hack-night-elastic-hopsworks-2026) or log in to your existing one.
 2. Create an **Elasticsearch Serverless** project (or a hosted deployment).
 3. Once it is created, open **Kibana** from the project page.
 4. [Create a free Hopsworks account](https://run.hopsworks.ai/) and create a project for the hackathon. Generate an API key for the Python SDK.

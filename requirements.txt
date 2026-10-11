@@ -4,3 +4,4 @@ python-dotenv>=1.0.0
 pandas>=2.0.0
 tqdm>=4.0.0
 jupyter>=1.0.0
+hopsworks[python]

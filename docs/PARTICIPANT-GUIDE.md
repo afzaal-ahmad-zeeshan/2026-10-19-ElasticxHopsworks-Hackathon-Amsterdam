@@ -476,7 +476,7 @@ FastF1 raw data
 ### Hopsworks
 - [Hopsworks docs](https://docs.hopsworks.ai/)
 - [Feature Store quickstart](https://docs.hopsworks.ai/latest/tutorials/)
-- [Python SDK (hsfs)](https://pypi.org/project/hsfs/)
+- [Python SDK (hopsworks)](https://pypi.org/project/hopsworks/)
 
 ### Data
 - [FastF1 Python library](https://github.com/theOehrly/Fast-F1) — free, no-auth, covers 2018–present

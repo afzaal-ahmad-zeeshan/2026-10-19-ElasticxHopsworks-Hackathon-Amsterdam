@@ -449,7 +449,7 @@ We will provide you with access to the F1 2023/2024 dataset in Hopsworks by us s
 
 * 📖 [Hopsworks documentation](https://docs.hopsworks.ai/)
 * 🧪 [Feature Store tutorials](https://docs.hopsworks.ai/latest/tutorials/)
-* 🐍 [Python SDK (hsfs)](https://pypi.org/project/hsfs/)
+* 🐍 [Python SDK (hopsworks)](https://pypi.org/project/hopsworks/)
 
 ### Data
 

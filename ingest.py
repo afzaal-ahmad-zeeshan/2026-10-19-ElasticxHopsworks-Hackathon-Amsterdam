@@ -6,7 +6,7 @@ Usage:
     pip install -r requirements.txt
     python ingest.py
 
-Set ELASTICSEARCH_URL and ELASTICSEARCH_API_KEY in .env (or export them).
+Set CLUSTER=local|remote and the matching LOCAL_/REMOTE_ELASTICSEARCH_* vars in .env.
 Configure SEASONS and SESSION_TYPES below to control what gets loaded.
 """
 
@@ -21,13 +21,16 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
 from tqdm import tqdm
 
-ES_URL     = os.environ["ELASTICSEARCH_URL"]
-ES_API_KEY = os.environ.get("ELASTICSEARCH_API_KEY")
-ES_USER    = os.environ.get("ELASTICSEARCH_USERNAME")
-ES_PASS    = os.environ.get("ELASTICSEARCH_PASSWORD")
+from es_config import resolve
+_cfg       = resolve()
+ES_URL     = _cfg["url"]
+ES_API_KEY = _cfg["api_key"] or None
+ES_USER    = _cfg["username"] or None
+ES_PASS    = _cfg["password"] or None
 # F1_SEASONS=2023,2024 overrides; add 2018–2022 for deeper history
 SEASONS        = [int(s) for s in os.environ.get("F1_SEASONS", "2023,2024").split(",") if s.strip()]
-SESSION_TYPES  = ["Race", "Qualifying"]
+# F1_SESSION_TYPES=Race,Qualifying overrides (e.g. just Race for a smaller load)
+SESSION_TYPES  = [s.strip() for s in os.environ.get("F1_SESSION_TYPES", "Race,Qualifying").split(",") if s.strip()]
 CACHE_DIR      = "./fastf1_cache"
 
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -35,7 +38,7 @@ fastf1.Cache.enable_cache(CACHE_DIR)
 
 es = (Elasticsearch(ES_URL, api_key=ES_API_KEY) if ES_API_KEY
       else Elasticsearch(ES_URL, basic_auth=(ES_USER, ES_PASS)))
-print(f"Connected to ES {es.info()['version']['number']}")
+print(f"Connected to ES [{_cfg['name']}] {ES_URL}  v{es.info()['version']['number']}")
 
 MAPPINGS = {
     "f1-sessions": {"mappings": {"properties": {

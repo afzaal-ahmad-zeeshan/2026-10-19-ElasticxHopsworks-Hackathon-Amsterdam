@@ -472,4 +472,3 @@ FastF1 raw data
 | [`docs/EVENT-BRIEF.md`](docs/EVENT-BRIEF.md) | Event brief |
 | [`docs/SCHIPHOL-BRIEF.md`](docs/SCHIPHOL-BRIEF.md) | Schiphol brief |
 | [`docs/DATASET-COMPARISON.md`](docs/DATASET-COMPARISON.md) | Dataset comparison |
-◊

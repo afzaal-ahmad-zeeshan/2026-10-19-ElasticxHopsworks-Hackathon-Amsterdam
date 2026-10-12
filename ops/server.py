@@ -24,6 +24,8 @@ from elasticsearch import Elasticsearch, NotFoundError
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+sys.path.insert(0, str(ROOT))
+import es_config  # noqa: E402
 KEY_PREFIX = "hackathon-ro-"
 DATA_PATTERN = "f1-*"
 INDEX_NAMES = ["f1-sessions", "f1-results", "f1-laps", "f1-weather", "f1-telemetry"]
@@ -39,14 +41,13 @@ class Bad(Exception):
 # ── Clusters ──────────────────────────────────────────────────────────────────
 
 def load_primary():
-    env = {**dotenv_values(ROOT / ".env"), **{k: v for k, v in os.environ.items() if k.startswith("ELASTICSEARCH_")}}
-    if env.get("ELASTICSEARCH_URL"):
-        clusters["primary"] = dict(
-            url=env["ELASTICSEARCH_URL"],
-            api_key=env.get("ELASTICSEARCH_API_KEY") or "",
-            username=env.get("ELASTICSEARCH_USERNAME") or "",
-            password=env.get("ELASTICSEARCH_PASSWORD") or "",
-        )
+    env = {**dotenv_values(ROOT / ".env"), **{k: v for k, v in os.environ.items()
+           if k.startswith(("ELASTICSEARCH_", "LOCAL_ELASTICSEARCH_", "REMOTE_ELASTICSEARCH_")) or k == "CLUSTER"}}
+    try:
+        cfg = es_config.resolve(env)
+    except SystemExit:
+        return
+    clusters["primary"] = {k: cfg[k] for k in ("url", "api_key", "username", "password")}
 
 
 def profile(name):
@@ -132,6 +133,7 @@ class Ingest:
             raise Bad("ingest already running against %r" % self.cluster)
         p = profile(cluster)
         env = dict(os.environ)
+        env.pop("CLUSTER", None)  # profile credentials below take over
         env.update(
             ELASTICSEARCH_URL=p["url"], ELASTICSEARCH_API_KEY=p["api_key"],
             ELASTICSEARCH_USERNAME=p["username"], ELASTICSEARCH_PASSWORD=p["password"],

@@ -23,10 +23,10 @@ It could be a tyre strategy advisor, a lap-time predictor, a race outcome simula
 2. Create an **Elasticsearch Serverless** project (or a hosted deployment).
 3. Once it is created, open **Kibana** from the project page.
 4. [Create a free Hopsworks account](https://run.hopsworks.ai/) and create a project for the hackathon. Generate an API key for the Python SDK.
-5. Install **Python 3.9+** on your laptop.
+5. Install **Python 3.10+** on your laptop.
    - Python is not needed if you would use the pre-ingested data in Elastic cluster.
 
-**Note:** if you do not want to create an account, we can provide temporary credentials to access a shared Elastic Cloud deployment.
+**Note:** if you do not want to create an account, we can provide temporary credentials to access a shared Elastic Cloud deployment and Hopsworks cluster.
 
 ## 🚀 Get the data
 
@@ -235,7 +235,7 @@ ELASTICSEARCH_URL=<ELASTICSEARCH_URL>
 ELASTICSEARCH_API_KEY=<ELASTICSEARCH_API_KEY>
 ```
 
-1. **Install Python 3.9+** on your computer.
+1. **Install Python 3.10+** on your computer.
 2. Install the dependencies: `pip install -r requirements.txt`
 3. Run `python ingest.py` to fetch the data from FastF1 and index it into your deployment.
 
@@ -387,6 +387,9 @@ FastF1 raw data
 | `weather_risk` | track_temp_delta, rainfall_prob, wind_speed | Safety car probability |
 | `sector_performance` | sector 1/2/3 split vs. driver average | Qualifying position prediction |
 
+We will provide you with access to the F1 2023/2024 dataset in Hopsworks by us sharing the tables with your Hopsworks project. The easiest way to start with Hopsworks is if you have a Claude/Codex/Copilot, you can use the hops CLI. If you don't have a coding agent subscription, we can provide credits to DeepSeek for the evening. You can also build an App (Python/Javascript) on Hopsworks to visualize your ML predictions or anything else. 
+
+
 ## 🗓️ Agenda
 
 | Time | Activity |
@@ -446,7 +449,7 @@ FastF1 raw data
 
 * 📖 [Hopsworks documentation](https://docs.hopsworks.ai/)
 * 🧪 [Feature Store tutorials](https://docs.hopsworks.ai/latest/tutorials/)
-* 🐍 [Python SDK (hsfs)](https://pypi.org/project/hsfs/)
+* 🐍 [Python SDK (hopsworks)](https://pypi.org/project/hopsworks/)
 
 ### Data
 

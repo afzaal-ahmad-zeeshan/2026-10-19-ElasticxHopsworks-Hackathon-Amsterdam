@@ -62,8 +62,8 @@ POST _reindex?wait_for_completion=false
 {
   "source": {
     "remote": {
-      "host": "<SOURCE_CLUSTER_URL>",
-      "api_key": "<ELASTICSEARCH_API_KEY>"
+      "host": "${SOURCE_CLUSTER_URL}",
+      "api_key": "${ELASTICSEARCH_API_KEY}"
     },
     "index": "f1-sessions-lite"
   },
@@ -97,8 +97,8 @@ POST _reindex?wait_for_completion=false
 {
   "source": {
     "remote": {
-      "host": "<SOURCE_CLUSTER_URL>",
-      "api_key": "<ELASTICSEARCH_API_KEY>"
+      "host": "${SOURCE_CLUSTER_URL}",
+      "api_key": "${ELASTICSEARCH_API_KEY}"
     },
     "index": "f1-results-lite"
   },
@@ -138,8 +138,8 @@ POST _reindex?wait_for_completion=false
 {
   "source": {
     "remote": {
-      "host": "<SOURCE_CLUSTER_URL>",
-      "api_key": "<ELASTICSEARCH_API_KEY>"
+      "host": "${SOURCE_CLUSTER_URL}",
+      "api_key": "${ELASTICSEARCH_API_KEY}"
     },
     "index": "f1-laps-lite"
   },
@@ -173,8 +173,8 @@ POST _reindex?wait_for_completion=false
 {
   "source": {
     "remote": {
-      "host": "<SOURCE_CLUSTER_URL>",
-      "api_key": "<ELASTICSEARCH_API_KEY>"
+      "host": "${SOURCE_CLUSTER_URL}",
+      "api_key": "${ELASTICSEARCH_API_KEY}"
     },
     "index": "f1-weather-lite"
   },
@@ -214,8 +214,8 @@ POST _reindex?wait_for_completion=false
 {
   "source": {
     "remote": {
-      "host": "<SOURCE_CLUSTER_URL>",
-      "api_key": "<ELASTICSEARCH_API_KEY>"
+      "host": "${SOURCE_CLUSTER_URL}",
+      "api_key": "${ELASTICSEARCH_API_KEY}"
     },
     "index": "f1-telemetry-lite"
   },

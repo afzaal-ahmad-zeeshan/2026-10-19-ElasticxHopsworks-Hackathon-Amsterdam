@@ -5,7 +5,7 @@
 
 ## The Pitch
 
-Formula 1 generates more data per race than most companies produce in a year. Every corner, every gear change, every tyre degradation curve is captured at 4 Hz across 20 cars for the full race distance.
+Formula 1 generates more data per race than most companies produce in a year. Every corner, every gear change, every tyre degradation curve is captured at up to 10 Hz across 20 cars for the full race distance.
 
 On October 19 we hand that data to developers in Amsterdam and ask a simple question: **what can you build in two hours?**
 
@@ -13,17 +13,18 @@ On October 19 we hand that data to developers in Amsterdam and ask a simple ques
 
 ## The Data
 
-We're using the **official F1 timing feed** via [FastF1](https://github.com/theOehrly/Fast-F1) — the same source the teams themselves use. Two full seasons (2023 + 2024), Race and Qualifying sessions, pre-loaded into Elasticsearch and ready to query from minute one.
+We're using the **official F1 timing feed** via [FastF1](https://github.com/theOehrly/Fast-F1) — the same source the teams themselves use. The dataset is a **lite cut of the Dutch Grand Prix at Zandvoort**: Race and Qualifying sessions from **2023 (round 13)** and **2024 (round 15)**, pre-loaded into Elasticsearch so you can copy it into your own project in a few minutes.
 
 | What | Scale |
 |---|---|
-| Seasons | 2023 + 2024 (46 race weekends) |
-| Sessions | 92 (Race + Qualifying per round) |
-| Lap records | ~60,000 |
-| Telemetry samples | **~18 million** (speed, throttle, brake, DRS, gear, X/Y coordinates) |
-| Weather samples | ~9,000 (air temp, track temp, wind, rainfall) |
+| Event | Dutch Grand Prix, Zandvoort — 2023 + 2024 |
+| Sessions | 4 (Race + Qualifying per year), 20 drivers each |
+| Lap records | 3,531 |
+| Telemetry samples | **~2.9 million** (speed, RPM, throttle, brake, DRS, gear, X/Y/Z coordinates, up to 10 Hz) |
+| Weather samples | 541 (air temp, track temp, wind, rainfall) |
+| Results | 80 (one per driver per session) |
 
-The Dutch Grand Prix at **Zandvoort** — home turf — is in there. Round 15 of 2024. Every lap Verstappen drove. Every braking point. Every overtake attempt.
+Every lap has matching telemetry, so you can join laps, weather and telemetry on `season`, `round_number`, `session_name`, `driver_code` and `lap_number`. Every lap Verstappen drove at home. Every braking point. Every overtake attempt.
 
 ---
 
@@ -31,9 +32,9 @@ The Dutch Grand Prix at **Zandvoort** — home turf — is in there. Round 15 of
 
 ### Elastic — Search, Explore, Visualise
 
-Elasticsearch stores all 18 million telemetry rows and makes them queryable in milliseconds using **ES|QL** — Elastic's SQL-like query language built for time-series and analytics workloads.
+Elasticsearch stores all 2.9 million telemetry rows and makes them queryable in milliseconds using **ES|QL** — Elastic's SQL-like query language built for time-series and analytics workloads.
 
-Kibana Lens, Discover, and Dashboards give participants a visual playground from the moment they arrive. No setup friction — data views are pre-configured, the cluster is live.
+Kibana Lens, Discover, and Dashboards give participants a visual playground from the moment they arrive. Copy the dataset into your own Elastic project with one Dev Tools script and start querying.
 
 ```esql
 FROM f1-telemetry
@@ -79,6 +80,7 @@ Teams of up to four people build an F1 application that uses:
 - **Elastic** — for search, dashboards, or AI features
 - **Hopsworks** — at least one Feature Group with meaningful feature engineering
 - **The F1 dataset** — telemetry, laps, weather, or results
+- **Python 3.10+** — required on your laptop, since the Hopsworks SDK (`hopsworks`) is Python-based
 
 Ideas to get started:
 
@@ -101,9 +103,9 @@ This event is jointly designed and run by **Elastic** and **Hopsworks**. Both co
 
 | | Elastic | Hopsworks |
 |---|---|---|
-| **Infrastructure** | Pre-loaded Elasticsearch cluster, Kibana environment | Hosted Feature Store sandbox accounts for all participants |
+| **Infrastructure** | Pre-filled source cluster to reindex from, Kibana environment | Hosted Feature Store sandbox accounts for all participants |
 | **Mentors on the night** | Elastic engineers on hand for ES|QL, Lens, Agent Builder | Hopsworks engineers for Feature Store, training pipelines, model serving |
-| **Dataset** | F1 telemetry pre-ingested and queryable | Feature pipeline examples and starter code |
+| **Dataset** | Lite Zandvoort dataset pre-ingested, copied into your project with one Dev Tools script | Feature pipeline examples and starter code |
 | **Judging** | Joint judging panel | Joint judging panel |
 
 ---

@@ -23,8 +23,7 @@ It could be a tyre strategy advisor, a lap-time predictor, a race outcome simula
 2. Create an **Elasticsearch Serverless** project (or a hosted deployment).
 3. Once it is created, open **Kibana** from the project page.
 4. [Create a free Hopsworks account](https://run.hopsworks.ai/) and create a project for the hackathon. Generate an API key for the Python SDK.
-5. Install **Python 3.10+** on your laptop.
-   - Python is not needed if you would use the pre-ingested data in Elastic cluster.
+5. Install **Python 3.10+** on your laptop. It is required: the Hopsworks Python SDK (`hopsworks`) runs on it, and you need it to build your feature pipelines.
 
 **Note:** if you do not want to create an account, we can provide temporary credentials to access a shared Elastic Cloud deployment and Hopsworks cluster.
 
@@ -488,5 +487,3 @@ We will provide you with access to the F1 2023/2024 dataset in Hopsworks by us s
 |---|---|
 | [`docs/PARTICIPANT-GUIDE.md`](docs/PARTICIPANT-GUIDE.md) | Full dataset schema, Kibana setup, more ES\|QL queries, Hopsworks ideas, schedule, rules, judging |
 | [`docs/EVENT-BRIEF.md`](docs/EVENT-BRIEF.md) | Event brief |
-| [`docs/SCHIPHOL-BRIEF.md`](docs/SCHIPHOL-BRIEF.md) | Schiphol brief |
-| [`docs/DATASET-COMPARISON.md`](docs/DATASET-COMPARISON.md) | Dataset comparison |

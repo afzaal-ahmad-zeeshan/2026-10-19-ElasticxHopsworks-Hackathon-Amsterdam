@@ -11,7 +11,7 @@
 
 ## 👋 Welcome
 
-During this Hack Night you will work with **real Formula 1 data** from the 2023 and 2024 seasons ([FastF1](https://github.com/theOehrly/Fast-F1)): every throttle input, braking point, tyre compound and pit stop. You will combine it with the **Elastic Stack** (search, ES|QL, Kibana, Agent Builder) and the **Hopsworks Feature Store** (feature engineering, model training and serving) to build something great in a few hours.
+During this Hack Night you will work with **real Formula 1 data** from the Dutch Grand Prix at Zandvoort in 2023 and 2024 ([FastF1](https://github.com/theOehrly/Fast-F1)): every throttle input, braking point, tyre compound and pit stop. You will combine it with the **Elastic Stack** (search, ES|QL, Kibana, Agent Builder) and the **Hopsworks Feature Store** (feature engineering, model training and serving) to build something great in a few hours.
 
 It could be a tyre strategy advisor, a lap-time predictor, a race outcome simulator, a driver comparison tool. The limit is your creativity!
 
@@ -36,7 +36,11 @@ Open **Kibana Dev Tools** (`/app/dev_tools`) of your deployment and run the comm
 
 The public **READONLY** API key and the source cluster URL will be shared during the session. In the commands below, replace `<SOURCE_CLUSTER_URL>` and `<ELASTICSEARCH_API_KEY>` with those values.
 
-#### f1-sessions (93 documents)
+To get you started quickly, the pre-filled cluster holds a **lite** version of the dataset: the **Dutch Grand Prix at Zandvoort in 2023 and 2024** (Race and Qualifying), about **2.9 million documents** in total. The source indices are called `f1-*-lite`, and the commands below copy them into indices called `f1-*` in your deployment, so all queries and examples in this guide use the plain `f1-*` names.
+
+> **Shortcut:** all the commands for the five indices are also in [`docs/reindex-all.kibana.txt`](docs/reindex-all.kibana.txt). Paste the whole file into Kibana Dev Tools, replace the two placeholders, select everything and click Run.
+
+#### f1-sessions (4 documents)
 
 ```js
 DELETE f1-sessions
@@ -62,13 +66,13 @@ POST _reindex?wait_for_completion=false
       "host": "<SOURCE_CLUSTER_URL>",
       "api_key": "<ELASTICSEARCH_API_KEY>"
     },
-    "index": "f1-sessions"
+    "index": "f1-sessions-lite"
   },
   "dest": { "index": "f1-sessions" }
 }
 ```
 
-#### f1-results (1,858 documents)
+#### f1-results (80 documents)
 
 ```js
 DELETE f1-results
@@ -97,13 +101,13 @@ POST _reindex?wait_for_completion=false
       "host": "<SOURCE_CLUSTER_URL>",
       "api_key": "<ELASTICSEARCH_API_KEY>"
     },
-    "index": "f1-results"
+    "index": "f1-results-lite"
   },
   "dest": { "index": "f1-results" }
 }
 ```
 
-#### f1-laps (67,110 documents)
+#### f1-laps (3,531 documents)
 
 ```js
 DELETE f1-laps
@@ -138,13 +142,13 @@ POST _reindex?wait_for_completion=false
       "host": "<SOURCE_CLUSTER_URL>",
       "api_key": "<ELASTICSEARCH_API_KEY>"
     },
-    "index": "f1-laps"
+    "index": "f1-laps-lite"
   },
   "dest": { "index": "f1-laps" }
 }
 ```
 
-#### f1-weather (11,391 documents)
+#### f1-weather (541 documents)
 
 ```js
 DELETE f1-weather
@@ -173,13 +177,13 @@ POST _reindex?wait_for_completion=false
       "host": "<SOURCE_CLUSTER_URL>",
       "api_key": "<ELASTICSEARCH_API_KEY>"
     },
-    "index": "f1-weather"
+    "index": "f1-weather-lite"
   },
   "dest": { "index": "f1-weather" }
 }
 ```
 
-#### f1-telemetry (57,353,359 documents)
+#### f1-telemetry (2,869,213 documents)
 
 ```js
 DELETE f1-telemetry
@@ -214,19 +218,19 @@ POST _reindex?wait_for_completion=false
       "host": "<SOURCE_CLUSTER_URL>",
       "api_key": "<ELASTICSEARCH_API_KEY>"
     },
-    "index": "f1-telemetry"
+    "index": "f1-telemetry-lite"
   },
   "dest": { "index": "f1-telemetry" }
 }
 ```
 
-Telemetry is the big one. Follow the progress of each reindex with `GET _tasks/<task_id>` and check the counts when it is done:
+Telemetry is the biggest one (2.9 million documents). Follow the progress of each reindex with `GET _tasks/<task_id>` and check the counts when it is done:
 
 ```
 GET _cat/indices/f1-*?v&h=index,docs.count&s=index
 ```
 
-### Index it yourself (very long!)
+### Index the full dataset yourself (very long!)
 
 Create a `.env` file at the root of the project (start from `.env.example`) with your deployment details:
 
@@ -239,16 +243,26 @@ ELASTICSEARCH_API_KEY=<ELASTICSEARCH_API_KEY>
 2. Install the dependencies: `pip install -r requirements.txt`
 3. Run `python ingest.py` to fetch the data from FastF1 and index it into your deployment.
 
-Indexing can take a long time, depending on the data. Approximate times:
+This loads the **full** dataset (every Race and Qualifying session of 2023 and 2024, about 57 million telemetry documents), not the lite version above. Approximate times:
 
 * sessions + results: < 1 minute
 * laps: ~5 minutes
 * weather: ~1 minute
-* telemetry: ~1–2 hours per season (~10M docs per season)
+* telemetry: ~2 hours per season (~28M docs per season); the full 2023 + 2024 load took about 4 hours
 
 ### Description of the data
 
-The data covers all **Race and Qualifying** sessions of the **2023 season (22 rounds)** and the **2024 season (24 rounds)**, including **Round 15 of 2024, the Dutch Grand Prix at Zandvoort**. No API key is required for FastF1.
+The pre-filled lite dataset covers the **Race and Qualifying** sessions of the **Dutch Grand Prix at Zandvoort** in **2023 (round 13)** and **2024 (round 15)**, 4 sessions in total. The data comes from FastF1, and no API key is required for it. If you want other circuits, run `ingest.py` yourself (see above) to load the full 2023 and 2024 seasons.
+
+| Index | Documents in the lite set |
+| --- | --- |
+| `f1-sessions` | 4 |
+| `f1-results` | 80 |
+| `f1-laps` | 3,531 |
+| `f1-weather` | 541 |
+| `f1-telemetry` | 2,869,213 |
+
+Every lap in `f1-laps` has matching telemetry in `f1-telemetry`. Join on `season`, `round_number`, `session_name`, `driver_code` and `lap_number`. Laps with `lap_duration_ms` empty (out laps, in laps, aborted laps) still have telemetry.
 
 | Index | Granularity | Content |
 | --- | --- | --- |
@@ -283,31 +297,31 @@ The full field reference for every index is in [`docs/PARTICIPANT-GUIDE.md`](doc
 
 Here are a few ideas to get you started. Run them in **Kibana Dev Tools** or in the ES|QL tab of **Discover**.
 
-Check that every round is there (2023 should have 22 rounds, 2024 should have 24):
+Check that all four sessions are there (2023 and 2024, Race and Qualifying):
 
 ```json
 POST _query?format=txt
 {
   "query": """
     FROM f1-sessions
-    | STATS rounds = COUNT_DISTINCT(round_number) BY season
+    | STATS sessions = COUNT() BY season
     | SORT season
   """
 }
 ```
 
 ```txt
-season | rounds
--------+-------
-2023   | 22
-2024   | 24
+season | sessions
+-------+---------
+2023   | 2
+2024   | 2
 ```
 
 Top 10 drivers by average clean-lap time in the 2024 Dutch GP:
 
 ```esql
 FROM f1-laps
-| WHERE event_name == "Dutch Grand Prix" AND session_name == "Race"
+| WHERE season == 2024 AND session_name == "Race"
 | WHERE lap_duration_ms IS NOT NULL AND is_pit_out_lap == false AND is_pit_in_lap == false
 | STATS avg_lap_ms = AVG(lap_duration_ms), laps = COUNT() BY driver_code
 | EVAL avg_lap_s = ROUND(avg_lap_ms / 1000.0, 3)
@@ -316,20 +330,20 @@ FROM f1-laps
 | KEEP driver_code, avg_lap_s, laps
 ```
 
-Tyre compound usage across the season:
+Tyre compound usage in the Dutch GP races of 2023 and 2024:
 
 ```esql
 FROM f1-laps
 | WHERE session_name == "Race"
-| STATS laps = COUNT() BY compound, round_number
-| SORT round_number, compound
+| STATS laps = COUNT() BY compound, season
+| SORT season, compound
 ```
 
-Top speed per driver in the Dutch GP race:
+Top speed per driver in the 2024 Dutch GP race:
 
 ```esql
 FROM f1-telemetry
-| WHERE event_name == "Dutch Grand Prix" AND session_name == "Race"
+| WHERE season == 2024 AND session_name == "Race"
 | STATS top_speed = MAX(speed) BY driver_code
 | SORT top_speed DESC
 ```
@@ -338,7 +352,7 @@ Throttle and brake profile of Verstappen on lap 10 at Zandvoort:
 
 ```esql
 FROM f1-telemetry
-| WHERE event_name == "Dutch Grand Prix" AND session_name == "Race"
+| WHERE season == 2024 AND session_name == "Race"
   AND driver_code == "VER" AND lap_number == 10
 | KEEP session_time_s, speed, throttle, brake, n_gear, drs
 | SORT session_time_s

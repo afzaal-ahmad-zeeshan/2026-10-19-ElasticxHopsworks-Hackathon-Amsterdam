@@ -1,0 +1,178 @@
+# Paste ALL of this into Kibana Dev Tools on YOUR deployment, select all, click Run.
+# The DELETE lines use ignore_unavailable so a fresh deployment (no f1-* yet) does not stop the run with a 404.
+# Replace <SOURCE_CLUSTER_URL> and <ELASTICSEARCH_API_KEY> first (shared during the session).
+# <ELASTICSEARCH_API_KEY> is the "encoded" value of a read-only key scoped to f1-*-lite (organizers: see docs/CREATE-READONLY-API-KEY.md).
+# Copies the lite dataset (Dutch GP 2023 + 2024, ~2.9M docs) from f1-*-lite on the source cluster into f1-* on yours.
+# Telemetry (2.9M docs) runs as a background task; check with GET _tasks/<task_id>.
+# Check counts afterwards: GET _cat/indices/f1-*?v&h=index,docs.count&s=index
+# Expected: f1-laps 3531, f1-results 80, f1-sessions 4, f1-telemetry 2869213, f1-weather 541
+
+# ---- f1-sessions ----
+DELETE f1-sessions?ignore_unavailable=true
+PUT f1-sessions
+{
+  "mappings": {"properties": {
+    "season":       {"type": "integer"},
+    "round_number": {"type": "integer"},
+    "session_key":  {"type": "integer"},
+    "event_name":   {"type": "keyword"},
+    "country":      {"type": "keyword"},
+    "location":     {"type": "keyword"},
+    "circuit_name": {"type": "keyword"},
+    "session_name": {"type": "keyword"},
+    "session_type": {"type": "keyword"},
+    "session_date": {"type": "date", "format": "strict_date_optional_time"}
+  }}
+}
+POST _reindex?wait_for_completion=false
+{
+  "source": {
+    "remote": {
+      "host": "<SOURCE_CLUSTER_URL>",
+      "api_key": "<ELASTICSEARCH_API_KEY>"
+    },
+    "index": "f1-sessions-lite"
+  },
+  "dest": { "index": "f1-sessions" }
+}
+
+# ---- f1-results ----
+DELETE f1-results?ignore_unavailable=true
+PUT f1-results
+{
+  "mappings": {"properties": {
+    "season":         {"type": "integer"},
+    "round_number":   {"type": "integer"},
+    "event_name":     {"type": "keyword"},
+    "session_name":   {"type": "keyword"},
+    "driver_number":  {"type": "integer"},
+    "driver_code":    {"type": "keyword"},
+    "full_name":      {"type": "keyword"},
+    "team_name":      {"type": "keyword"},
+    "position":       {"type": "integer"},
+    "points":         {"type": "float"},
+    "grid_position":  {"type": "integer"},
+    "status":         {"type": "keyword"},
+    "fastest_lap_ms": {"type": "integer"}
+  }}
+}
+POST _reindex?wait_for_completion=false
+{
+  "source": {
+    "remote": {
+      "host": "<SOURCE_CLUSTER_URL>",
+      "api_key": "<ELASTICSEARCH_API_KEY>"
+    },
+    "index": "f1-results-lite"
+  },
+  "dest": { "index": "f1-results" }
+}
+
+# ---- f1-laps ----
+DELETE f1-laps?ignore_unavailable=true
+PUT f1-laps
+{
+  "mappings": {"properties": {
+    "season":            {"type": "integer"},
+    "round_number":      {"type": "integer"},
+    "session_key":       {"type": "integer"},
+    "event_name":        {"type": "keyword"},
+    "session_name":      {"type": "keyword"},
+    "driver_number":     {"type": "integer"},
+    "driver_code":       {"type": "keyword"},
+    "team_name":         {"type": "keyword"},
+    "lap_number":        {"type": "integer"},
+    "lap_duration_ms":   {"type": "integer"},
+    "duration_sector_1": {"type": "integer"},
+    "duration_sector_2": {"type": "integer"},
+    "duration_sector_3": {"type": "integer"},
+    "compound":          {"type": "keyword"},
+    "tyre_life":         {"type": "integer"},
+    "is_pit_out_lap":    {"type": "boolean"},
+    "is_pit_in_lap":     {"type": "boolean"},
+    "track_status":      {"type": "keyword"},
+    "position":          {"type": "integer"}
+  }}
+}
+POST _reindex?wait_for_completion=false
+{
+  "source": {
+    "remote": {
+      "host": "<SOURCE_CLUSTER_URL>",
+      "api_key": "<ELASTICSEARCH_API_KEY>"
+    },
+    "index": "f1-laps-lite"
+  },
+  "dest": { "index": "f1-laps" }
+}
+
+# ---- f1-weather ----
+DELETE f1-weather?ignore_unavailable=true
+PUT f1-weather
+{
+  "mappings": {"properties": {
+    "season":            {"type": "integer"},
+    "round_number":      {"type": "integer"},
+    "session_key":       {"type": "integer"},
+    "event_name":        {"type": "keyword"},
+    "session_name":      {"type": "keyword"},
+    "session_time_s":    {"type": "float"},
+    "air_temperature":   {"type": "float"},
+    "track_temperature": {"type": "float"},
+    "humidity":          {"type": "float"},
+    "pressure":          {"type": "float"},
+    "wind_speed":        {"type": "float"},
+    "wind_direction":    {"type": "integer"},
+    "rainfall":          {"type": "boolean"}
+  }}
+}
+POST _reindex?wait_for_completion=false
+{
+  "source": {
+    "remote": {
+      "host": "<SOURCE_CLUSTER_URL>",
+      "api_key": "<ELASTICSEARCH_API_KEY>"
+    },
+    "index": "f1-weather-lite"
+  },
+  "dest": { "index": "f1-weather" }
+}
+
+# ---- f1-telemetry ----
+DELETE f1-telemetry?ignore_unavailable=true
+PUT f1-telemetry
+{
+  "mappings": {"properties": {
+    "season":         {"type": "integer"},
+    "round_number":   {"type": "integer"},
+    "session_key":    {"type": "integer"},
+    "event_name":     {"type": "keyword"},
+    "session_name":   {"type": "keyword"},
+    "driver_number":  {"type": "integer"},
+    "driver_code":    {"type": "keyword"},
+    "team_name":      {"type": "keyword"},
+    "lap_number":     {"type": "integer"},
+    "session_time_s": {"type": "float"},
+    "speed":          {"type": "integer"},
+    "rpm":            {"type": "integer"},
+    "throttle":       {"type": "integer"},
+    "brake":          {"type": "boolean"},
+    "drs":            {"type": "integer"},
+    "n_gear":         {"type": "integer"},
+    "x":              {"type": "float"},
+    "y":              {"type": "float"},
+    "z":              {"type": "float"}
+  }}
+}
+POST _reindex?wait_for_completion=false
+{
+  "source": {
+    "remote": {
+      "host": "<SOURCE_CLUSTER_URL>",
+      "api_key": "<ELASTICSEARCH_API_KEY>"
+    },
+    "index": "f1-telemetry-lite"
+  },
+  "dest": { "index": "f1-telemetry" }
+}
+
